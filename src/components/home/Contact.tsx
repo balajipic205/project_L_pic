@@ -74,8 +74,8 @@ const Contact = () => {
             className="space-y-6"
           >
             {[
-              { icon: MapPin, title: "Location", content: "ECE Department, University Campus, Kanpur - 208024" },
-              { icon: Mail, title: "Email", content: "upagraha@university.edu", href: "mailto:upagraha@university.edu" },
+              { icon: MapPin, title: "Location", content: "ECE Department, SVCE Campus, Chennai - 602117" },
+              { icon: Mail, title: "Email", content: "upagraha@svce.ac.in", href: "mailto:upagraha@svce.ac.in" },
               { icon: Phone, title: "Phone", content: "+91 98765 43210", href: "tel:+919876543210" },
             ].map((item, index) => (
               <motion.div
