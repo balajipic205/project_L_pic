@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
 
 // ========== EASY ADJUSTMENTS ==========
-export const HERO_CURSOR_RADIUS = 120; // Radius of the reveal circle in pixels
+export const HERO_CURSOR_RADIUS = 100; // Radius of the reveal circle in pixels
 // ======================================
 
 // Hero images - easy to change

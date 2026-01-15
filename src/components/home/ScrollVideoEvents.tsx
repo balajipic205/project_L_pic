@@ -3,12 +3,12 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { events } from "@/data/events";
 import { FileText, Cpu, Map, Zap, Wrench, Brain } from "lucide-react";
+import { useFramePreloader } from "@/hooks/useFramePreloader";
 
 // ========== EASY ADJUSTMENTS ==========
 const CONFIG = {
-  totalFrames: 80,           // Total number of frames
-  framePrefix: "frame_",     // Prefix for frame files (e.g., frame_001.webp)
-  framesFolder: "/frames/",  // Folder containing frames in public directory
+  circleRadius: 180,       // Radius for circular button layout
+  circleRadiusMobile: 120, // Radius on mobile
 };
 // ======================================
 
@@ -19,47 +19,26 @@ const iconMap: { [key: string]: any } = {
 const ScrollVideoEvents = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [images, setImages] = useState<HTMLImageElement[]>([]);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const { images, isLoaded, totalFrames } = useFramePreloader();
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
 
-  // Load all frames
-  useEffect(() => {
-    const loadImages = async () => {
-      const loadedImages: HTMLImageElement[] = [];
-      
-      for (let i = 1; i <= CONFIG.totalFrames; i++) {
-        const img = new Image();
-        const frameNumber = String(i).padStart(3, '0');
-        img.src = `${CONFIG.framesFolder}${CONFIG.framePrefix}${frameNumber}.webp`;
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = () => {
-            // If frame doesn't exist, use a placeholder or skip
-            console.warn(`Frame ${frameNumber} not found`);
-            resolve(null);
-          };
-        });
-        
-        loadedImages.push(img);
-      }
-      
-      setImages(loadedImages);
-      setImagesLoaded(true);
-    };
-
-    loadImages();
-  }, []);
-
   // Draw frame based on scroll position
   useEffect(() => {
-    if (!imagesLoaded || images.length === 0) return;
+    if (!isLoaded || images.length === 0) return;
 
     const unsubscribe = scrollYProgress.on("change", (progress) => {
       const canvas = canvasRef.current;
@@ -70,8 +49,8 @@ const ScrollVideoEvents = () => {
 
       // Calculate current frame (0 to totalFrames-1)
       const frameIndex = Math.min(
-        Math.floor(progress * CONFIG.totalFrames),
-        CONFIG.totalFrames - 1
+        Math.floor(progress * totalFrames),
+        totalFrames - 1
       );
 
       const img = images[frameIndex];
@@ -100,7 +79,7 @@ const ScrollVideoEvents = () => {
     });
 
     return () => unsubscribe();
-  }, [imagesLoaded, images, scrollYProgress]);
+  }, [isLoaded, images, scrollYProgress, totalFrames]);
 
   // Set canvas size
   useEffect(() => {
@@ -116,6 +95,8 @@ const ScrollVideoEvents = () => {
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
+
+  const radius = isMobile ? CONFIG.circleRadiusMobile : CONFIG.circleRadius;
 
   return (
     <section id="events" ref={containerRef} className="relative" style={{ height: "400vh" }}>
@@ -154,13 +135,19 @@ const ScrollVideoEvents = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: showButtons ? 1 : 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ pointerEvents: showButtons ? "auto" : "none" }}
         >
-          <div className="relative w-[500px] h-[500px] md:w-[600px] md:h-[600px]">
+          <div 
+            className="relative"
+            style={{ 
+              width: (radius * 2) + 150, 
+              height: (radius * 2) + 150 
+            }}
+          >
             {events.map((event, index) => {
               const Icon = iconMap[event.icon];
               const angle = (index / events.length) * 2 * Math.PI - Math.PI / 2;
-              const radius = 200; // Distance from center (md screens)
               const x = Math.cos(angle) * radius;
               const y = Math.sin(angle) * radius;
 
@@ -170,8 +157,10 @@ const ScrollVideoEvents = () => {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={showButtons ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
-                  className="absolute left-1/2 top-1/2"
+                  className="absolute"
                   style={{
+                    left: "50%",
+                    top: "50%",
                     transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
                   }}
                 >
@@ -179,13 +168,13 @@ const ScrollVideoEvents = () => {
                     <motion.div
                       whileHover={{ scale: 1.15 }}
                       whileTap={{ scale: 0.95 }}
-                      className="glass-card p-4 md:p-5 rounded-full neon-border-green hover:neon-border-purple transition-all duration-300 group cursor-pointer"
+                      className="glass-card p-3 md:p-4 rounded-full neon-border-green hover:neon-border-purple transition-all duration-300 group cursor-pointer"
                     >
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-secondary/10 transition-colors">
-                          <Icon className="w-6 h-6 md:w-7 md:h-7 text-primary group-hover:text-secondary transition-colors" />
+                      <div className="flex flex-col items-center gap-1 md:gap-2">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-secondary/10 transition-colors">
+                          <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary group-hover:text-secondary transition-colors" />
                         </div>
-                        <span className="text-xs md:text-sm font-cyber text-center text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
+                        <span className="text-[10px] md:text-xs font-cyber text-center text-foreground group-hover:text-primary transition-colors whitespace-nowrap max-w-[60px] md:max-w-[80px] truncate">
                           {event.title.split(' ')[0]}
                         </span>
                       </div>
@@ -202,10 +191,10 @@ const ScrollVideoEvents = () => {
               transition={{ delay: 0.5 }}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
             >
-              <h3 className="font-heading text-2xl md:text-3xl font-bold text-primary text-glow-green">
+              <h3 className="font-heading text-xl md:text-2xl font-bold text-primary text-glow-green">
                 ENTER
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Your Universe
               </p>
             </motion.div>
@@ -213,7 +202,7 @@ const ScrollVideoEvents = () => {
         </motion.div>
 
         {/* Fallback if frames not loaded */}
-        {!imagesLoaded && (
+        {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-background">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
