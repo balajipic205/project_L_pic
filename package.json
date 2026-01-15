@@ -67,11 +67,8 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
-<<<<<<< HEAD
-    "gsap": "^3.12.5"
-=======
+    "gsap": "^3.12.5",
     "zustand": "^5.0.0"
->>>>>>> 3ecdc513f22085b99026d1ebc613a2cfcc669675
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
